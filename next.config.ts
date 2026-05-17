@@ -5,6 +5,7 @@ const nextConfig: NextConfig = {
     "http://localhost:3000",
     "http://192.168.56.1:3000",
   ],
+  turbopack: {},
   webpack: (config) => {
     config.resolve.alias.canvas = false;
     return config;
