@@ -85,7 +85,7 @@ export function renderFrame(
   // Clear and draw (covering object-fit logic)
   ctx.clearRect(0, 0, width, height);
   
-  const imgRatio = image.width / image.height;
+  const imgRatio = image.naturalWidth / image.naturalHeight;
   const canvasRatio = width / height;
   
   let drawWidth = width;
