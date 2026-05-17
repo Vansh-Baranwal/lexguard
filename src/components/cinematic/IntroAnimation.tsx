@@ -10,6 +10,7 @@ interface Props {
 
 export function IntroAnimation({ frameCount, pathTemplate, onComplete }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const [currentFrame, setCurrentFrame] = useState(0);
   const [loaded, setLoaded] = useState(false);
   const imagesRef = useRef<HTMLImageElement[]>([]);
@@ -54,68 +55,78 @@ export function IntroAnimation({ frameCount, pathTemplate, onComplete }: Props) 
     ctx.drawImage(img, x, y, img.width * scale, img.height * scale);
   };
 
-  // Auto-play animation when loaded
+  // Scroll-controlled animation
   useEffect(() => {
     if (!loaded) return;
 
-    let frame = 0;
-    const fps = 12; // 12 frames per second for smooth playback
-    const interval = 1000 / fps;
+    drawFrame(0);
 
-    const animate = () => {
-      if (frame < frameCount) {
-        drawFrame(frame);
-        setCurrentFrame(frame);
-        frame++;
-        setTimeout(animate, interval);
-      } else {
-        // Animation complete
-        setTimeout(() => {
-          onComplete();
-        }, 500); // Small delay before allowing scroll
+    const handleScroll = () => {
+      if (!containerRef.current) return;
+
+      const scrolled = window.scrollY;
+      const maxScroll = window.innerHeight; // One full viewport height to complete animation
+      
+      const progress = Math.min(scrolled / maxScroll, 1);
+      const frameIndex = Math.floor(progress * (frameCount - 1));
+      
+      setCurrentFrame(frameIndex);
+      drawFrame(frameIndex);
+
+      // Notify parent when animation completes
+      if (progress >= 1) {
+        onComplete();
       }
     };
 
-    animate();
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    handleScroll(); // Initial call
+    
+    return () => window.removeEventListener('scroll', handleScroll);
   }, [loaded, frameCount, onComplete]);
 
   // Handle window resize
   useEffect(() => {
     const handleResize = () => {
-      if (loaded && currentFrame < frameCount) {
+      if (loaded) {
         drawFrame(currentFrame);
       }
     };
 
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
-  }, [loaded, currentFrame, frameCount]);
+  }, [loaded, currentFrame]);
 
   return (
-    <div className="fixed inset-0 z-50 bg-black flex items-center justify-center">
-      <canvas 
-        ref={canvasRef} 
-        className="w-full h-full object-cover"
-      />
-      {!loaded && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center space-y-4">
-          <div className="w-16 h-16 border-4 border-zinc-800 border-t-zinc-400 rounded-full animate-spin" />
-          <div className="text-zinc-500 text-sm tracking-[0.3em] font-mono uppercase">
-            Loading Experience
+    <div ref={containerRef} className="relative w-full h-[200vh]">
+      <div className="sticky top-0 w-full h-screen bg-black flex items-center justify-center">
+        <canvas 
+          ref={canvasRef} 
+          className="w-full h-full object-cover"
+        />
+        {!loaded && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center space-y-4 bg-black">
+            <div className="w-16 h-16 border-4 border-zinc-800 border-t-zinc-400 rounded-full animate-spin" />
+            <div className="text-zinc-500 text-sm tracking-[0.3em] font-mono uppercase">
+              Loading Experience
+            </div>
           </div>
-        </div>
-      )}
-      {/* Progress indicator */}
-      {loaded && (
-        <div className="absolute bottom-8 left-1/2 -translate-x-1/2">
-          <div className="w-64 h-1 bg-zinc-800 rounded-full overflow-hidden">
-            <div 
-              className="h-full bg-white transition-all duration-100"
-              style={{ width: `${(currentFrame / frameCount) * 100}%` }}
-            />
+        )}
+        {/* Progress indicator */}
+        {loaded && (
+          <div className="absolute bottom-8 left-1/2 -translate-x-1/2">
+            <div className="w-64 h-1 bg-zinc-800 rounded-full overflow-hidden">
+              <div 
+                className="h-full bg-white transition-all duration-100"
+                style={{ width: `${(currentFrame / (frameCount - 1)) * 100}%` }}
+              />
+            </div>
+            <p className="text-zinc-500 text-xs text-center mt-2 font-mono">
+              Scroll to explore
+            </p>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }
