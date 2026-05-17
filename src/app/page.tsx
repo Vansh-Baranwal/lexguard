@@ -1,4 +1,5 @@
 import React from "react";
+import ScrollAnimation from "@/components/ScrollAnimation";
 
 export default function Home() {
   return (
@@ -12,12 +13,7 @@ export default function Home() {
       </section>
 
       {/* Cinematic Scroll Animation Section */}
-      <section id="scroll-animation" className="relative min-h-[200vh] w-full">
-        <div className="sticky top-0 h-screen w-full flex items-center justify-center">
-          <p className="text-xl text-zinc-400">Scroll Animation Sequence Placeholder</p>
-          {/* Canvas will be injected here */}
-        </div>
-      </section>
+      <ScrollAnimation />
 
       {/* AI Analysis Section */}
       <section id="ai-analysis" className="relative min-h-screen w-full flex items-center justify-center bg-zinc-900/50">
