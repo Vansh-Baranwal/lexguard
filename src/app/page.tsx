@@ -2,7 +2,7 @@
 
 import React from "react";
 import { UploadZone } from "@/components/upload/UploadZone";
-import { CinematicScroll } from "@/components/cinematic/CinematicScroll";
+import { CanvasSequence } from "@/components/cinematic/CanvasSequence";
 import { ClauseExplorerUI } from "@/components/cinematic/ClauseExplorerUI";
 
 export default function Home() {
@@ -31,8 +31,11 @@ export default function Home() {
         </div>
       </section>
 
-      {/* 2. CINEMATIC GENERATIVE SCROLL SEQUENCE */}
-      <CinematicScroll />
+      {/* 2. CINEMATIC WEBP SCROLL SEQUENCE */}
+      <CanvasSequence 
+        frameCount={36} 
+        pathTemplate={(idx) => `/ezgif/frame_${String(idx - 1).padStart(2, '0')}_delay-0.083s.webp`} 
+      />
 
       {/* 3. AI RISK VISUALIZATION / CLAUSE EXPLORER */}
       <section className="relative min-h-screen w-full flex flex-col items-center justify-center bg-black z-20 py-24">

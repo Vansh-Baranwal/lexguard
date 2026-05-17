@@ -1,0 +1,47 @@
+# Firebase App Hosting Configuration File
+# Reference: https://firebase.google.com/docs/app-hosting/configure
+
+# Run settings for Cloud Run backend
+runConfig:
+  minInstances: 0
+  maxInstances: 10
+  concurrency: 80
+
+# Environment variables bound during build and runtime
+env:
+  - variable: NEXT_PUBLIC_FIREBASE_API_KEY
+    value: "AIzaSyBLomtAHSwCPmw0EKCX_oZxqMfMhnpV1l8"
+    availability:
+      - BUILD
+      - RUNTIME
+  - variable: NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
+    value: "lexguard-e5c60.firebaseapp.com"
+    availability:
+      - BUILD
+      - RUNTIME
+  - variable: NEXT_PUBLIC_FIREBASE_PROJECT_ID
+    value: "lexguard-e5c60"
+    availability:
+      - BUILD
+      - RUNTIME
+  - variable: NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET
+    value: "lexguard-e5c60.firebasestorage.app"
+    availability:
+      - BUILD
+      - RUNTIME
+  - variable: NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID
+    value: "793509947285"
+    availability:
+      - BUILD
+      - RUNTIME
+  - variable: NEXT_PUBLIC_FIREBASE_APP_ID
+    value: "1:793509947285:web:9eed09336db35c8d79f89c"
+    availability:
+      - BUILD
+      - RUNTIME
+
+# Secret variables securely managed by Cloud Secret Manager
+# Firebase App Hosting will automatically mount these securely to the runtime environment.
+secrets:
+  - variable: GEMINI_API_KEY
+    secret: GEMINI_API_KEY
