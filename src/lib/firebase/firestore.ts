@@ -15,14 +15,17 @@ import {
 } from "firebase/firestore";
 import { db } from "./config";
 
+import { ClauseAnalysisResult } from '../analysis/formatter';
+
 // --- ARCHITECTURE & SCHEMAS ---
 
-export type ContractStatus = 'uploaded' | 'parsing' | 'chunked' | 'ready_for_analysis' | 'failed';
+export type ContractStatus = 'uploaded' | 'parsing' | 'chunked' | 'ready_for_analysis' | 'analyzing' | 'analyzed' | 'analysis_failed' | 'failed';
 
 export interface ContractClause {
   id: string;
   position: number;
   text: string;
+  analysis?: ClauseAnalysisResult;
 }
 
 export interface UserDocument {
