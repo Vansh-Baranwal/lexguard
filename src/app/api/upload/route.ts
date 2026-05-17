@@ -5,6 +5,7 @@ import { cleanLegalText } from '@/lib/parsing/cleaner';
 import { chunkLegalText } from '@/lib/parsing/chunker';
 
 export const runtime = "nodejs";
+export const maxDuration = 60;
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 
@@ -43,15 +44,31 @@ export async function POST(request: NextRequest) {
     let rawText = '';
     
     // Temporary In-Memory Processing (No file persistence)
-    if (file.type === 'application/pdf') {
-      console.log('[Upload API] Processing PDF');
-      rawText = await extractTextFromPDF(arrayBuffer);
-      console.log('[Upload API] PDF text extracted, length:', rawText.length);
-    } else {
-      console.log('[Upload API] Processing DOCX');
-      const buffer = Buffer.from(arrayBuffer);
-      rawText = await extractTextFromDOCX(buffer);
-      console.log('[Upload API] DOCX text extracted, length:', rawText.length);
+    try {
+      if (file.type === 'application/pdf') {
+        console.log('[Upload API] Processing PDF');
+        rawText = await extractTextFromPDF(arrayBuffer);
+        console.log('[Upload API] PDF text extracted, length:', rawText.length);
+      } else {
+        console.log('[Upload API] Processing DOCX');
+        const buffer = Buffer.from(arrayBuffer);
+        rawText = await extractTextFromDOCX(buffer);
+        console.log('[Upload API] DOCX text extracted, length:', rawText.length);
+      }
+    } catch (parseError) {
+      console.error('[Upload API] Parse error:', parseError);
+      return NextResponse.json({ 
+        error: 'Failed to parse document', 
+        details: parseError instanceof Error ? parseError.message : 'Unknown parsing error',
+        fileType: file.type
+      }, { status: 500 });
+    }
+
+    if (!rawText || rawText.trim().length === 0) {
+      return NextResponse.json({ 
+        error: 'No text could be extracted from the document',
+        details: 'The document may be empty, image-based, or corrupted'
+      }, { status: 400 });
     }
 
     console.log('[Upload API] Cleaning text');
