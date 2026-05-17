@@ -17,9 +17,13 @@ import { db } from "./config";
 
 import { ClauseAnalysisResult } from '../analysis/formatter';
 
+import { ContractIntelligenceReport } from '../analysis/orchestrator';
+
 // --- ARCHITECTURE & SCHEMAS ---
 
 export type ContractStatus = 'uploaded' | 'parsing' | 'chunked' | 'ready_for_analysis' | 'analyzing' | 'analyzed' | 'analysis_failed' | 'failed';
+
+export type CinematicProcessingState = 'scanning' | 'detecting_risks' | 'evaluating_liabilities' | 'finalizing_analysis' | 'analysis_complete';
 
 export interface ContractClause {
   id: string;
@@ -39,11 +43,13 @@ export interface ContractDocument {
   userId: string;
   fileName: string;
   status: ContractStatus;
+  cinematicState?: CinematicProcessingState;
   createdAt: Date;
   updatedAt: Date;
   extractedText?: string; // No raw files are stored permanently
   fileHash?: string;
   clauses?: ContractClause[];
+  report?: ContractIntelligenceReport;
 }
 
 export interface AnalysisDocument {
@@ -54,11 +60,16 @@ export interface AnalysisDocument {
   createdAt: Date;
 }
 
+import { VerificationState } from '../zk/proof';
+
 export interface ProofDocument {
+  proofId: string;
+  contractHash: string;
+  timestamp: number;
+  verificationState: VerificationState;
+  riskSummary: string;
   contractId: string;
-  nfcSignature?: string;
-  zkProof?: string;
-  verifiedAt: Date;
+  userId: string;
 }
 
 export const COLLECTIONS = {
