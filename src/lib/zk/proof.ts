@@ -48,7 +48,7 @@ export function verifyReceiptIntegrity(receipt: VerificationReceipt): boolean {
   if (!receipt || !receipt.proofId) return false;
   
   const isValidFormat = receipt.proofId.startsWith('LXG-') && receipt.proofId.length === 10;
-  const hasValidHash = receipt.contractHash && receipt.contractHash.length === 64;
+  const hasValidHash = typeof receipt.contractHash === 'string' && receipt.contractHash.length === 64;
   
   return isValidFormat && hasValidHash;
 }

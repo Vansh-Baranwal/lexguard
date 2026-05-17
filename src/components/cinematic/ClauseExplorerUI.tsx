@@ -30,7 +30,9 @@ export function ClauseExplorerUI() {
     };
 
     const unsubscribe = gestureBus.subscribe(handleGesture);
-    return () => unsubscribe();
+    return () => {
+      unsubscribe();
+    };
   }, [gestureModeActive, mockClauses.length]);
 
   const activeClause = mockClauses[currentClauseIndex];

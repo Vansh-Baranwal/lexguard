@@ -1,7 +1,6 @@
 // Server-side PDF text extraction using the pdfjs-dist legacy build.
 // The legacy build is specifically designed for Node.js environments and
 // does NOT require browser workers or workerSrc configuration.
-// @ts-expect-error -- legacy build has no dedicated type declarations
 import { getDocument } from 'pdfjs-dist/legacy/build/pdf.mjs';
 
 export async function extractTextFromPDF(buffer: ArrayBuffer): Promise<string> {
@@ -19,7 +18,12 @@ export async function extractTextFromPDF(buffer: ArrayBuffer): Promise<string> {
       const page = await pdfDocument.getPage(pageNum);
       const textContent = await page.getTextContent();
       const pageText = textContent.items
-        .map((item: { str?: string }) => item.str || '')
+        .map((item) => {
+          if (item && 'str' in item) {
+            return (item as { str?: string }).str || '';
+          }
+          return '';
+        })
         .join(' ');
       fullText += pageText + '\n\n';
     }
