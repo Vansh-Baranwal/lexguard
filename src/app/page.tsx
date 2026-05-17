@@ -5,6 +5,9 @@ import { UploadZone } from "@/components/upload/UploadZone";
 import { IntroAnimation } from "@/components/cinematic/IntroAnimation";
 import { ThreeBackground } from "@/components/cinematic/ThreeBackground";
 import { ClauseExplorerUI } from "@/components/cinematic/ClauseExplorerUI";
+import { FeaturesSection } from "@/components/sections/FeaturesSection";
+import { HowItWorksSection } from "@/components/sections/HowItWorksSection";
+import { SecuritySection } from "@/components/sections/SecuritySection";
 
 export default function Home() {
   const [animationComplete, setAnimationComplete] = useState(false);
@@ -49,7 +52,13 @@ export default function Home() {
           </div>
         </section>
 
-        {/* 2. AI RISK VISUALIZATION / CLAUSE EXPLORER */}
+        {/* 2. FEATURES SECTION */}
+        <FeaturesSection />
+
+        {/* 3. HOW IT WORKS SECTION */}
+        <HowItWorksSection />
+
+        {/* 4. AI RISK VISUALIZATION / CLAUSE EXPLORER */}
         <section className="relative min-h-screen w-full flex flex-col items-center justify-center z-20 py-24">
           <div className="absolute inset-0 bg-gradient-to-b from-black/80 via-purple-950/30 to-black/80 -z-10" />
           <div className="text-center mb-12">
@@ -63,7 +72,10 @@ export default function Home() {
           <ClauseExplorerUI />
         </section>
 
-        {/* 3. PROOF VERIFICATION & NFC CTA */}
+        {/* 5. SECURITY SECTION */}
+        <SecuritySection />
+
+        {/* 6. PROOF VERIFICATION & NFC CTA */}
         <section className="relative min-h-[80vh] w-full flex flex-col items-center justify-center border-t border-purple-500/20 z-20">
           <div className="absolute inset-0 bg-gradient-to-b from-black/80 to-black -z-10" />
           <div className="max-w-3xl text-center px-6 space-y-8">
@@ -88,6 +100,40 @@ export default function Home() {
             </div>
           </div>
         </section>
+
+        {/* 7. FOOTER */}
+        <footer className="relative w-full py-12 px-6 border-t border-purple-500/10 z-20">
+          <div className="absolute inset-0 bg-black/90 -z-10" />
+          <div className="max-w-7xl mx-auto">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
+              <div>
+                <h3 className="text-2xl font-black bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-cyan-400 mb-3">
+                  LEXGUARD
+                </h3>
+                <p className="text-purple-200/60 text-sm">
+                  AI-powered legal document analysis to protect you from unfair contracts.
+                </p>
+              </div>
+              <div>
+                <h4 className="text-white font-bold mb-3">Legal</h4>
+                <ul className="space-y-2 text-purple-200/60 text-sm">
+                  <li>Privacy Policy</li>
+                  <li>Terms of Service</li>
+                  <li>Cookie Policy</li>
+                </ul>
+              </div>
+              <div>
+                <h4 className="text-white font-bold mb-3">Disclaimer</h4>
+                <p className="text-purple-200/60 text-sm">
+                  LexGuard provides informational analysis only and does not constitute legal advice. Consult a qualified attorney for legal guidance.
+                </p>
+              </div>
+            </div>
+            <div className="text-center text-purple-400/50 text-sm pt-8 border-t border-purple-500/10">
+              © 2026 LexGuard. Built with security and privacy in mind.
+            </div>
+          </div>
+        </footer>
 
       </main>
     </>
