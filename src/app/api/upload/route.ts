@@ -8,59 +8,91 @@ export const runtime = "nodejs";
 export const maxDuration = 60;
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+const ALLOWED_MIME_TYPES = [
+  'application/pdf', 
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+] as const;
+
+// Simple in-memory rate limiting (use Redis in production)
+const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
+const RATE_LIMIT_WINDOW = 60000; // 1 minute
+const RATE_LIMIT_MAX_REQUESTS = 10;
+
+function checkRateLimit(identifier: string): boolean {
+  const now = Date.now();
+  const record = rateLimitMap.get(identifier);
+
+  if (!record || now > record.resetTime) {
+    rateLimitMap.set(identifier, { count: 1, resetTime: now + RATE_LIMIT_WINDOW });
+    return true;
+  }
+
+  if (record.count >= RATE_LIMIT_MAX_REQUESTS) {
+    return false;
+  }
+
+  record.count++;
+  return true;
+}
+
+// Sanitize filename to prevent path traversal and XSS
+function sanitizeFileName(fileName: string): string {
+  return fileName
+    .replace(/[<>:"/\\|?*\x00-\x1F]/g, '_') // Remove dangerous characters
+    .replace(/\.{2,}/g, '_') // Prevent directory traversal
+    .substring(0, 255); // Limit length
+}
 
 export async function POST(request: NextRequest) {
-  console.log('[Upload API] Request received');
   try {
-    const formData = await request.formData();
-    console.log('[Upload API] FormData parsed');
+    // Rate limiting
+    const clientIp = request.headers.get('x-forwarded-for') || 
+                     request.headers.get('x-real-ip') || 
+                     'unknown';
     
+    if (!checkRateLimit(clientIp)) {
+      return NextResponse.json(
+        { error: 'Too many requests. Please try again later.' }, 
+        { status: 429 }
+      );
+    }
+
+    const formData = await request.formData();
     const file = formData.get('file') as File | null;
 
     if (!file) {
-      console.log('[Upload API] No file in request');
       return NextResponse.json({ error: 'No file provided' }, { status: 400 });
     }
 
-    console.log('[Upload API] File received:', file.name, file.type, file.size);
-
+    // Validate file size
     if (file.size > MAX_FILE_SIZE) {
-      return NextResponse.json({ error: 'File exceeds 10MB limit' }, { status: 400 });
+      return NextResponse.json({ 
+        error: `File exceeds ${MAX_FILE_SIZE / 1024 / 1024}MB limit` 
+      }, { status: 400 });
     }
 
-    const validTypes = [
-      'application/pdf', 
-      'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
-    ];
-    
-    if (!validTypes.includes(file.type)) {
-      return NextResponse.json({ error: 'Unsupported file type. Only PDF and DOCX are allowed.' }, { status: 400 });
+    // Validate file type
+    if (!ALLOWED_MIME_TYPES.includes(file.type as any)) {
+      return NextResponse.json({ 
+        error: 'Unsupported file type. Only PDF and DOCX are allowed.' 
+      }, { status: 400 });
     }
 
-    console.log('[Upload API] Starting file processing');
     const arrayBuffer = await file.arrayBuffer();
-    console.log('[Upload API] ArrayBuffer created, size:', arrayBuffer.byteLength);
-    
     let rawText = '';
     
-    // Temporary In-Memory Processing (No file persistence)
+    // In-Memory Processing (No file persistence)
     try {
       if (file.type === 'application/pdf') {
-        console.log('[Upload API] Processing PDF');
         rawText = await extractTextFromPDF(arrayBuffer);
-        console.log('[Upload API] PDF text extracted, length:', rawText.length);
       } else {
-        console.log('[Upload API] Processing DOCX');
         const buffer = Buffer.from(arrayBuffer);
         rawText = await extractTextFromDOCX(buffer);
-        console.log('[Upload API] DOCX text extracted, length:', rawText.length);
       }
     } catch (parseError) {
-      console.error('[Upload API] Parse error:', parseError);
       return NextResponse.json({ 
         error: 'Failed to parse document', 
-        details: parseError instanceof Error ? parseError.message : 'Unknown parsing error',
-        fileType: file.type
+        details: 'The document format may be corrupted or unsupported'
       }, { status: 500 });
     }
 
@@ -71,32 +103,40 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
-    console.log('[Upload API] Cleaning text');
     const cleanedText = cleanLegalText(rawText);
-    console.log('[Upload API] Chunking text');
     const clauses = chunkLegalText(cleanedText);
-    console.log('[Upload API] Chunking complete, clauses:', clauses.length);
 
-    // Prepare structured parsed output
+    // Sanitize output data
     const parsedData = {
-      fileName: file.name,
+      fileName: sanitizeFileName(file.name),
       fileSize: file.size,
       mimeType: file.type,
       clauseCount: clauses.length,
-      clauses: clauses,
-      status: 'chunked' // Ready for AI Analysis
+      clauses: clauses.map(clause => ({
+        ...clause,
+        // Ensure clause text is safe for rendering
+        text: clause.text.substring(0, 1000) // Limit clause length
+      })),
+      status: 'chunked'
     };
 
-    console.log('[Upload API] Success, returning response');
-    return NextResponse.json(parsedData, { status: 200 });
+    return NextResponse.json(parsedData, { 
+      status: 200,
+      headers: {
+        'X-Content-Type-Options': 'nosniff',
+        'X-Frame-Options': 'DENY',
+        'X-XSS-Protection': '1; mode=block'
+      }
+    });
   } catch (error: unknown) {
-    const err = error as Error;
-    console.error('[Upload API] ERROR:', err);
-    console.error('[Upload API] Stack:', err.stack);
+    // Log error securely (use proper logging service in production)
+    if (process.env.NODE_ENV === 'development') {
+      console.error('[Upload API] ERROR:', error);
+    }
+    
     return NextResponse.json({ 
       error: 'Failed to process document', 
-      details: err.message,
-      stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
+      details: 'An unexpected error occurred. Please try again.'
     }, { status: 500 });
   }
 }
