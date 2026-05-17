@@ -99,29 +99,33 @@ export function IntroAnimation({ frameCount, pathTemplate, onComplete }: Props) 
 
   return (
     <div ref={containerRef} className="relative w-full h-[200vh]">
-      <div className="sticky top-0 w-full h-screen bg-black flex items-center justify-center">
+      <div className="sticky top-0 w-full h-screen bg-transparent flex items-center justify-center overflow-hidden">
         <canvas 
           ref={canvasRef} 
           className="w-full h-full object-cover"
         />
+        {/* Bottom blur gradient to blend with background */}
+        <div className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-black via-black/50 to-transparent pointer-events-none" 
+             style={{ backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)' }} 
+        />
         {!loaded && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center space-y-4 bg-black">
-            <div className="w-16 h-16 border-4 border-zinc-800 border-t-zinc-400 rounded-full animate-spin" />
-            <div className="text-zinc-500 text-sm tracking-[0.3em] font-mono uppercase">
+          <div className="absolute inset-0 flex flex-col items-center justify-center space-y-4 bg-black/80 backdrop-blur-sm">
+            <div className="w-16 h-16 border-4 border-purple-800 border-t-purple-400 rounded-full animate-spin" />
+            <div className="text-purple-400 text-sm tracking-[0.3em] font-mono uppercase">
               Loading Experience
             </div>
           </div>
         )}
         {/* Progress indicator */}
         {loaded && (
-          <div className="absolute bottom-8 left-1/2 -translate-x-1/2">
-            <div className="w-64 h-1 bg-zinc-800 rounded-full overflow-hidden">
+          <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10">
+            <div className="w-64 h-1 bg-zinc-800/50 rounded-full overflow-hidden backdrop-blur-sm">
               <div 
-                className="h-full bg-white transition-all duration-100"
+                className="h-full bg-gradient-to-r from-purple-500 via-pink-500 to-cyan-500 transition-all duration-100"
                 style={{ width: `${(currentFrame / (frameCount - 1)) * 100}%` }}
               />
             </div>
-            <p className="text-zinc-500 text-xs text-center mt-2 font-mono">
+            <p className="text-purple-300 text-xs text-center mt-2 font-mono">
               Scroll to explore
             </p>
           </div>
