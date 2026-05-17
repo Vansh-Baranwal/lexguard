@@ -1,7 +1,6 @@
 // Server-side PDF text extraction using the pdfjs-dist legacy build.
 // The legacy build is specifically designed for Node.js environments and
 // does NOT require browser workers or workerSrc configuration.
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-expect-error -- legacy build has no dedicated type declarations
 import { getDocument } from 'pdfjs-dist/legacy/build/pdf.mjs';
 
