@@ -13,7 +13,9 @@ export function IntroAnimation({ frameCount, pathTemplate, onComplete }: Props) 
   const containerRef = useRef<HTMLDivElement>(null);
   const [currentFrame, setCurrentFrame] = useState(0);
   const [loaded, setLoaded] = useState(false);
+  const [animationComplete, setAnimationComplete] = useState(false);
   const imagesRef = useRef<HTMLImageElement[]>([]);
+  const scrollAccumulatorRef = useRef(0);
 
   // Preload all frames
   useEffect(() => {
@@ -55,35 +57,50 @@ export function IntroAnimation({ frameCount, pathTemplate, onComplete }: Props) 
     ctx.drawImage(img, x, y, img.width * scale, img.height * scale);
   };
 
-  // Scroll-controlled animation
+  // Lock scroll and control animation with wheel events
   useEffect(() => {
     if (!loaded) return;
 
     drawFrame(0);
 
-    const handleScroll = () => {
-      if (!containerRef.current) return;
+    const handleWheel = (e: WheelEvent) => {
+      if (animationComplete) return; // Allow normal scrolling after animation
 
-      const scrolled = window.scrollY;
-      const maxScroll = window.innerHeight; // One full viewport height to complete animation
-      
-      const progress = Math.min(scrolled / maxScroll, 1);
-      const frameIndex = Math.floor(progress * (frameCount - 1));
-      
-      setCurrentFrame(frameIndex);
-      drawFrame(frameIndex);
+      e.preventDefault();
 
-      // Notify parent when animation completes
-      if (progress >= 1) {
+      // Accumulate scroll delta
+      scrollAccumulatorRef.current += e.deltaY;
+
+      // Calculate frame based on accumulated scroll (adjust sensitivity)
+      const scrollPerFrame = 30; // Lower = more sensitive
+      const targetFrame = Math.floor(scrollAccumulatorRef.current / scrollPerFrame);
+      const clampedFrame = Math.max(0, Math.min(frameCount - 1, targetFrame));
+
+      setCurrentFrame(clampedFrame);
+      drawFrame(clampedFrame);
+
+      // Check if animation is complete
+      if (clampedFrame >= frameCount - 1) {
+        setAnimationComplete(true);
         onComplete();
       }
     };
 
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    handleScroll(); // Initial call
-    
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, [loaded, frameCount, onComplete]);
+    // Prevent default scroll behavior during animation
+    const preventScroll = (e: Event) => {
+      if (!animationComplete) {
+        e.preventDefault();
+      }
+    };
+
+    window.addEventListener('wheel', handleWheel, { passive: false });
+    window.addEventListener('touchmove', preventScroll, { passive: false });
+
+    return () => {
+      window.removeEventListener('wheel', handleWheel);
+      window.removeEventListener('touchmove', preventScroll);
+    };
+  }, [loaded, frameCount, onComplete, animationComplete]);
 
   // Handle window resize
   useEffect(() => {
@@ -97,9 +114,14 @@ export function IntroAnimation({ frameCount, pathTemplate, onComplete }: Props) 
     return () => window.removeEventListener('resize', handleResize);
   }, [loaded, currentFrame]);
 
+  // Hide container after animation completes
+  if (animationComplete) {
+    return null;
+  }
+
   return (
-    <div ref={containerRef} className="relative w-full h-[200vh]">
-      <div className="sticky top-0 w-full h-screen bg-transparent flex items-center justify-center overflow-hidden">
+    <div ref={containerRef} className="fixed inset-0 z-50">
+      <div className="w-full h-screen bg-transparent flex items-center justify-center overflow-hidden">
         <canvas 
           ref={canvasRef} 
           className="w-full h-full object-cover"
@@ -126,7 +148,7 @@ export function IntroAnimation({ frameCount, pathTemplate, onComplete }: Props) 
               />
             </div>
             <p className="text-purple-300 text-xs text-center mt-2 font-mono">
-              Scroll to explore
+              Scroll to explore • {currentFrame + 1}/{frameCount}
             </p>
           </div>
         )}
