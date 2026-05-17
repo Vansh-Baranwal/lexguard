@@ -3,11 +3,43 @@
 import React, { useCallback, useState } from 'react';
 import { useDropzone } from 'react-dropzone';
 
-// Mock demo data
-const MOCK_ANALYSIS = {
-  fileName: "sample-contract.pdf",
-  fileSize: 245678,
-  mimeType: "application/pdf",
+// Type definitions for better type safety
+interface ClauseData {
+  id: number;
+  text: string;
+  riskLevel: 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';
+  category: string;
+  concerns: string[];
+}
+
+interface AnalysisResult {
+  fileName: string;
+  fileSize: number;
+  mimeType: string;
+  clauseCount: number;
+  status: string;
+  clauses: ClauseData[];
+  summary: {
+    totalClauses: number;
+    highRisk: number;
+    criticalRisk: number;
+    mediumRisk: number;
+    lowRisk: number;
+    overallRating: string;
+  };
+}
+
+// Constants for configuration
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+const ALLOWED_FILE_TYPES = {
+  'application/pdf': ['.pdf'],
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx']
+} as const;
+
+const PROCESSING_DELAY = 1500; // Simulated processing time in ms
+
+// Mock demo data - In production, this would come from backend API
+const MOCK_ANALYSIS: Omit<AnalysisResult, 'fileName' | 'fileSize' | 'mimeType'> = {
   clauseCount: 12,
   status: "analyzed",
   clauses: [
@@ -64,42 +96,86 @@ const MOCK_ANALYSIS = {
   }
 };
 
+// Helper function to sanitize filename for display
+const sanitizeFileName = (fileName: string): string => {
+  return fileName.replace(/[<>:"/\\|?*]/g, '_').substring(0, 255);
+};
+
+// Helper function to get risk level styling
+const getRiskLevelStyles = (riskLevel: ClauseData['riskLevel']) => {
+  const styles = {
+    CRITICAL: {
+      bg: 'bg-red-950/30 border-red-900/50',
+      badge: 'bg-red-500 text-white'
+    },
+    HIGH: {
+      bg: 'bg-orange-950/30 border-orange-900/50',
+      badge: 'bg-orange-500 text-white'
+    },
+    MEDIUM: {
+      bg: 'bg-yellow-950/30 border-yellow-900/50',
+      badge: 'bg-yellow-500 text-black'
+    },
+    LOW: {
+      bg: 'bg-green-950/30 border-green-900/50',
+      badge: 'bg-green-500 text-white'
+    }
+  };
+  return styles[riskLevel];
+};
+
 export function UploadZone() {
   const [isUploading, setIsUploading] = useState(false);
-  const [result, setResult] = useState<typeof MOCK_ANALYSIS | null>(null);
+  const [result, setResult] = useState<AnalysisResult | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const onDrop = useCallback(async (acceptedFiles: File[]) => {
+  const onDrop = useCallback(async (acceptedFiles: File[], rejectedFiles: File[]) => {
+    // Handle rejected files
+    if (rejectedFiles.length > 0) {
+      setError('File rejected. Please ensure it is a PDF or DOCX under 10MB.');
+      return;
+    }
+
     const file = acceptedFiles[0];
     if (!file) return;
+
+    // Additional security validation
+    if (file.size > MAX_FILE_SIZE) {
+      setError(`File size exceeds ${MAX_FILE_SIZE / 1024 / 1024}MB limit.`);
+      return;
+    }
 
     setIsUploading(true);
     setError(null);
     setResult(null);
 
-    // Simulate processing delay for realism
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    try {
+      // Simulate processing delay for demo purposes
+      await new Promise(resolve => setTimeout(resolve, PROCESSING_DELAY));
 
-    // Show mock results with actual filename
-    const mockResult = {
-      ...MOCK_ANALYSIS,
-      fileName: file.name,
-      fileSize: file.size,
-      mimeType: file.type
-    };
+      // Create mock result with sanitized filename
+      const mockResult: AnalysisResult = {
+        ...MOCK_ANALYSIS,
+        fileName: sanitizeFileName(file.name),
+        fileSize: file.size,
+        mimeType: file.type
+      };
 
-    setResult(mockResult);
-    setIsUploading(false);
+      setResult(mockResult);
+    } catch (err) {
+      setError('An error occurred while processing your document. Please try again.');
+      console.error('Upload error:', err);
+    } finally {
+      setIsUploading(false);
+    }
   }, []);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
-    accept: {
-      'application/pdf': ['.pdf'],
-      'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx']
-    },
-    maxSize: 10 * 1024 * 1024, // 10MB
-    multiple: false
+    accept: ALLOWED_FILE_TYPES,
+    maxSize: MAX_FILE_SIZE,
+    multiple: false,
+    disabled: isUploading
   });
 
   return (
@@ -107,37 +183,48 @@ export function UploadZone() {
       <div 
         {...getRootProps()} 
         className={`border-2 border-dashed rounded-lg p-12 text-center cursor-pointer transition-colors
-          ${isDragActive ? 'border-white bg-white/10' : 'border-zinc-700 hover:border-zinc-500 bg-black/50'}
+          ${isUploading ? 'opacity-50 cursor-not-allowed' : ''}
+          ${isDragActive ? 'border-purple-400 bg-purple-500/10' : 'border-purple-700/50 hover:border-purple-500 bg-black/50'}
         `}
+        aria-label="File upload zone"
       >
-        <input {...getInputProps()} />
+        <input {...getInputProps()} aria-label="File input" />
         {isUploading ? (
-          <p className="text-zinc-300">Analyzing document with AI...</p>
+          <div className="flex flex-col items-center gap-3">
+            <div className="w-8 h-8 border-4 border-purple-800 border-t-purple-400 rounded-full animate-spin" />
+            <p className="text-purple-300">Analyzing document with AI...</p>
+          </div>
         ) : isDragActive ? (
           <p className="text-white">Drop the legal document here...</p>
         ) : (
-          <p className="text-zinc-400">Drag & drop a PDF or DOCX here, or click to select</p>
+          <div>
+            <p className="text-purple-200 mb-2">Drag & drop a PDF or DOCX here, or click to select</p>
+            <p className="text-purple-400/60 text-sm">Maximum file size: 10MB</p>
+          </div>
         )}
       </div>
 
       {error && (
-        <div className="mt-4 p-4 bg-red-900/50 text-red-200 rounded-lg text-sm">
-          {error}
+        <div className="mt-4 p-4 bg-red-900/50 border border-red-700/50 text-red-200 rounded-lg text-sm" role="alert">
+          <strong className="font-bold">Error: </strong>
+          <span>{error}</span>
         </div>
       )}
 
       {result && (
         <div className="mt-6 space-y-4">
           {/* Summary Card */}
-          <div className="p-6 bg-zinc-900/80 border border-zinc-800 rounded-lg">
+          <div className="p-6 bg-zinc-900/80 border border-purple-800/30 rounded-lg">
             <div className="flex items-center justify-between mb-4">
               <div>
-                <h3 className="text-xl font-bold text-white">{result.fileName}</h3>
-                <p className="text-sm text-zinc-500">{(result.fileSize / 1024).toFixed(1)} KB • {result.clauseCount} clauses analyzed</p>
+                <h3 className="text-xl font-bold text-white break-words">{result.fileName}</h3>
+                <p className="text-sm text-purple-300/70">
+                  {(result.fileSize / 1024).toFixed(1)} KB • {result.clauseCount} clauses analyzed
+                </p>
               </div>
               <div className="text-right">
                 <div className="text-2xl font-black text-red-400">{result.summary.overallRating}</div>
-                <div className="text-xs text-zinc-500 mt-1">Risk Assessment</div>
+                <div className="text-xs text-purple-400/70 mt-1">Risk Assessment</div>
               </div>
             </div>
             
@@ -164,39 +251,30 @@ export function UploadZone() {
           {/* Risky Clauses */}
           <div className="space-y-3">
             <h4 className="text-lg font-bold text-white px-2">⚠️ Flagged Clauses</h4>
-            {result.clauses.map((clause) => (
-              <div 
-                key={clause.id}
-                className={`p-4 rounded-lg border ${
-                  clause.riskLevel === 'CRITICAL' 
-                    ? 'bg-red-950/30 border-red-900/50' 
-                    : clause.riskLevel === 'HIGH'
-                    ? 'bg-orange-950/30 border-orange-900/50'
-                    : 'bg-yellow-950/30 border-yellow-900/50'
-                }`}
-              >
-                <div className="flex items-start justify-between mb-2">
-                  <span className={`text-xs font-black px-2 py-1 rounded ${
-                    clause.riskLevel === 'CRITICAL' 
-                      ? 'bg-red-500 text-white' 
-                      : clause.riskLevel === 'HIGH'
-                      ? 'bg-orange-500 text-white'
-                      : 'bg-yellow-500 text-black'
-                  }`}>
-                    {clause.riskLevel}
-                  </span>
-                  <span className="text-xs text-zinc-500 uppercase tracking-wider">{clause.category}</span>
-                </div>
-                <p className="text-sm text-zinc-300 mb-3 italic">"{clause.text}"</p>
-                <div className="flex flex-wrap gap-2">
-                  {clause.concerns.map((concern, idx) => (
-                    <span key={idx} className="text-xs bg-black/40 text-zinc-400 px-2 py-1 rounded">
-                      • {concern}
+            {result.clauses.map((clause) => {
+              const styles = getRiskLevelStyles(clause.riskLevel);
+              return (
+                <div 
+                  key={clause.id}
+                  className={`p-4 rounded-lg border ${styles.bg}`}
+                >
+                  <div className="flex items-start justify-between mb-2">
+                    <span className={`text-xs font-black px-2 py-1 rounded ${styles.badge}`}>
+                      {clause.riskLevel}
                     </span>
-                  ))}
+                    <span className="text-xs text-purple-400/70 uppercase tracking-wider">{clause.category}</span>
+                  </div>
+                  <p className="text-sm text-purple-100 mb-3 italic">"{clause.text}"</p>
+                  <div className="flex flex-wrap gap-2">
+                    {clause.concerns.map((concern, idx) => (
+                      <span key={idx} className="text-xs bg-black/40 text-purple-300/80 px-2 py-1 rounded">
+                        • {concern}
+                      </span>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}
