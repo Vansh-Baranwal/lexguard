@@ -9,7 +9,6 @@ export async function extractTextFromPDF(buffer: ArrayBuffer): Promise<string> {
       data: new Uint8Array(buffer),
       useSystemFonts: true,
       disableFontFace: true,
-      standardFontDataUrl: undefined,
     });
 
     const pdfDocument = await loadingTask.promise;
