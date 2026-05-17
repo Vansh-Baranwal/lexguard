@@ -126,9 +126,9 @@ export function IntroAnimation({ frameCount, pathTemplate, onComplete }: Props) 
           ref={canvasRef} 
           className="w-full h-full object-cover"
         />
-        {/* Bottom blur gradient to blend with background */}
-        <div className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-black via-black/50 to-transparent pointer-events-none" 
-             style={{ backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)' }} 
+        {/* Bottom blur gradient to blend with background - reduced blur area */}
+        <div className="absolute inset-x-0 bottom-0 h-1/6 bg-gradient-to-t from-black/60 via-black/20 to-transparent pointer-events-none" 
+             style={{ backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)' }} 
         />
         {!loaded && (
           <div className="absolute inset-0 flex flex-col items-center justify-center space-y-4 bg-black/80 backdrop-blur-sm">
