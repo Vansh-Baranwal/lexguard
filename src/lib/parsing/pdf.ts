@@ -9,6 +9,7 @@ export async function extractTextFromPDF(buffer: ArrayBuffer): Promise<string> {
       data: new Uint8Array(buffer),
       useSystemFonts: true,
       disableFontFace: true,
+      standardFontDataUrl: undefined,
     });
 
     const pdfDocument = await loadingTask.promise;
@@ -31,6 +32,6 @@ export async function extractTextFromPDF(buffer: ArrayBuffer): Promise<string> {
     return fullText;
   } catch (error) {
     console.error('Failed to extract PDF text:', error);
-    throw new Error('Failed to parse PDF document.');
+    throw new Error(`Failed to parse PDF document: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 }
