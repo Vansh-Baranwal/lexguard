@@ -1,15 +1,16 @@
 import React from "react";
 import ScrollAnimation from "@/components/ScrollAnimation";
+import { UploadZone } from "@/components/upload/UploadZone";
 
 export default function Home() {
   return (
     <main className="flex flex-col min-h-screen w-full bg-black text-white selection:bg-white selection:text-black">
       {/* Hero Section */}
-      <section id="hero" className="relative h-screen w-full flex items-center justify-center">
-        <h1 className="text-4xl md:text-6xl font-bold tracking-tighter">
+      <section id="hero" className="relative min-h-screen w-full flex flex-col items-center justify-center pt-20 pb-12 z-20">
+        <h1 className="text-4xl md:text-6xl font-bold tracking-tighter mb-8">
           LEXGUARD
         </h1>
-        {/* Placeholder for hero content */}
+        <UploadZone />
       </section>
 
       {/* Cinematic Scroll Animation Section */}

@@ -15,6 +15,58 @@ import {
 } from "firebase/firestore";
 import { db } from "./config";
 
+// --- ARCHITECTURE & SCHEMAS ---
+
+export type ContractStatus = 'uploaded' | 'parsing' | 'chunked' | 'ready_for_analysis' | 'failed';
+
+export interface ContractClause {
+  id: string;
+  position: number;
+  text: string;
+}
+
+export interface UserDocument {
+  email: string;
+  displayName: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface ContractDocument {
+  userId: string;
+  fileName: string;
+  status: ContractStatus;
+  createdAt: Date;
+  updatedAt: Date;
+  extractedText?: string; // No raw files are stored permanently
+  fileHash?: string;
+  clauses?: ContractClause[];
+}
+
+export interface AnalysisDocument {
+  contractId: string;
+  userId: string;
+  aiSummary: string;
+  flags: string[];
+  createdAt: Date;
+}
+
+export interface ProofDocument {
+  contractId: string;
+  nfcSignature?: string;
+  zkProof?: string;
+  verifiedAt: Date;
+}
+
+export const COLLECTIONS = {
+  USERS: 'users',
+  CONTRACTS: 'contracts',
+  ANALYSES: 'analyses',
+  PROOFS: 'proofs',
+} as const;
+
+// --- DATABASE HELPERS ---
+
 // Generic add document wrapper
 export const addDocument = async <T extends WithFieldValue<DocumentData>>(
   collectionPath: string, 
